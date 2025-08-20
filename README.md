@@ -1,18 +1,13 @@
 Convertir les fichiers .txt en .csv avec txt2csv.py.
 Catégoriser les données avec categorize_data.py.
-Entraîner le modèle avec 200sims.ipynb ou 5sims.ipynb dans Jupyter.
-Visualiser les résultats avec Visualisation.ipynb.
-Exécuter un entraînement de modèle supplémentaire via model.py.
-
-
-
+Entraîner le modèle 
+Visualiser les résultats 
 
 
 1. txt2csv.py (Convert .txt to .csv)
 2. categorize_data.py (Mark fraudulent users)
 3. train_test_split.py (Split into train/test)
 4. model.py (Train and evaluate)
-
 
 
 ### pipe line
