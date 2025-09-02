@@ -1,21 +1,30 @@
 import pandas as pd
 import numpy as np
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
+
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import confusion_matrix, roc_curve, auc
+
 from imblearn.under_sampling import RandomUnderSampler
 from imblearn.over_sampling import SMOTE
+
 import seaborn as sns
+
 import matplotlib.pyplot as plt
-import pickle
 import logging
 from pathlib import Path
 from typing import Tuple, List, Optional, Dict, Any
+from preprocessor import DataPreprocessor
 
+from config import *
+QuickConfig.quick_test()
+print(get_config_summary())
 
 
 """
@@ -29,6 +38,7 @@ Data Loading → Preprocessing → Train/Test Split → Sampling → Model Train
 Training → Save (Model + Preprocessor State) → Load → Predict on New Data
 
 """
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -57,121 +67,6 @@ class MLPFraudDetector(nn.Module):
         return x
 
 
-
-
-class DataPreprocessor:
-    """Handles data preprocessing operations"""
-    
-    def __init__(self):
-        self.label_encoders = {}
-        self.scaler = StandardScaler()
-        self.pca = None
-        self.feature_columns = ['size', 'src_number', 'dst_number', 'duration', 'hour', 
-                               'CDR_type', 'dst_imei', 'src_imei', 'minute', 'second', 
-                               'current_src_cellId']
-        self.categorical_columns = ['src_number', 'CDR_type', 'src_imei', 'initial_src_cellId', 
-                                  'current_src_cellId', 'dst_number', 'dst_imei', 
-                                  'initial_dst_cellId', 'current_dst_cellId', 'year']
-    
-    def discretize_categorical_features(self, data: pd.DataFrame) -> pd.DataFrame:
-        """Discretize categorical features using label encoding approach"""
-        data_copy = data.copy()
-        
-        for column in self.categorical_columns:
-            if column in data_copy.columns:
-                data_copy = self._discretize_column(data_copy, column)
-        
-        return data_copy
-    
-    def _discretize_column(self, data: pd.DataFrame, column: str) -> pd.DataFrame:
-        """Discretize a single column"""
-        if column not in data.columns:
-            logger.warning(f"Column {column} not found in dataset")
-            return data
-        
-        unique_values = data[column].unique()
-        mapping = {value: i+1 for i, value in enumerate(sorted(unique_values))}
-        data[column] = data[column].map(mapping)
-        
-        return data
-    
-    def encode_categorical_features(self, data: pd.DataFrame, fit: bool = True) -> pd.DataFrame:
-        """Encode categorical features using LabelEncoder"""
-        data_encoded = data.copy()
-        
-        for column in data_encoded.select_dtypes(include=['object']).columns:
-            if fit:
-                if column not in self.label_encoders:
-                    self.label_encoders[column] = LabelEncoder()
-                data_encoded[column] = self.label_encoders[column].fit_transform(data_encoded[column])
-            else:
-                if column in self.label_encoders:
-                    data_encoded[column] = self.label_encoders[column].transform(data_encoded[column])
-        
-        return data_encoded
-    
-    def apply_pca(self, features: pd.DataFrame, n_components: Optional[int] = None, 
-                  variance_threshold: float = 0.95, fit: bool = True) -> Tuple[np.ndarray, float]:
-        """Apply PCA for dimensionality reduction"""
-        if fit:
-            features_scaled = self.scaler.fit_transform(features)
-            
-            if n_components is None:
-                # Determine optimal number of components based on variance threshold
-                pca_temp = PCA()
-                pca_temp.fit(features_scaled)
-                cumsum = np.cumsum(pca_temp.explained_variance_ratio_)
-                n_components = np.argmax(cumsum >= variance_threshold) + 1
-            
-            self.pca = PCA(n_components=n_components)
-            principal_components = self.pca.fit_transform(features_scaled)
-            explained_variance = sum(self.pca.explained_variance_ratio_)
-        else:
-            if self.pca is None:
-                raise ValueError("PCA not fitted. Call with fit=True first.")
-            features_scaled = self.scaler.transform(features)
-            principal_components = self.pca.transform(features_scaled)
-            explained_variance = sum(self.pca.explained_variance_ratio_)
-        
-        logger.info(f"PCA reduced features from {features.shape[1]} to {n_components} dimensions")
-        logger.info(f"Explained variance: {explained_variance:.4f}")
-        
-        return principal_components, explained_variance
-    
-    def get_feature_importance_from_pca(self, feature_names: List[str], 
-                                      n_top_features: int = 5) -> List[str]:
-        """Get most important features based on PCA components"""
-        if self.pca is None:
-            raise ValueError("PCA not fitted")
-        
-        # Get absolute contributions of features to first few components
-        components = np.abs(self.pca.components_[:3])  # First 3 components
-        feature_importance = np.mean(components, axis=0)
-        
-        # Get indices of top features
-        top_indices = np.argsort(feature_importance)[::-1][:n_top_features]
-        top_features = [feature_names[i] for i in top_indices]
-        
-        return top_features
-    
-    def add_gaussian_noise(self, data: pd.DataFrame, columns: List[str], 
-                          mean: float = 0, std_dev: float = 0.1) -> pd.DataFrame:
-        """Add Gaussian noise to specified columns for robustness testing"""
-        noisy_data = data.copy()
-        
-        for column in columns:
-            if column in noisy_data.columns:
-                noise = np.random.normal(mean, std_dev, size=len(noisy_data))
-                noisy_data[column] = noisy_data[column] + noise
-        
-        return noisy_data
-
-
-
-
-
-
-
 class ImbalancedDataHandler:
     """Handles imbalanced dataset using various sampling techniques"""
     
@@ -197,11 +92,6 @@ class ImbalancedDataHandler:
         return X_resampled, y_resampled
 
 
-
-
-
-
-
 class FraudDetectionSystem:
     """Main fraud detection system orchestrating all components"""
     
@@ -218,10 +108,16 @@ class FraudDetectionSystem:
         self.criterion = nn.CrossEntropyLoss()
         self.optimizer = None
         
-    def load_and_preprocess_data(self, file_path: str, target_column: str = 'fraudulent_user',
-                                use_pca: bool = False) -> Tuple[np.ndarray, np.ndarray]:
-        """Load and preprocess data from CSV file"""
-        logger.info(f"Loading data from {file_path}")
+    
+    def load_and_preprocess_data(self, file_path: str, target_column: str = TARGET_COLUMN,
+                                use_pca: bool = USE_PCA) -> tuple[np.ndarray, np.ndarray, List[str]]:
+        """        
+        Returns:
+            X_processed: Processed features (original or principal components)
+            y: Target values
+            feature_names: Names of features/components
+        """
+        print(f"Loading data from {file_path}")
         data = pd.read_csv(file_path)
         
         # Discretize categorical features
@@ -231,20 +127,50 @@ class FraudDetectionSystem:
         y = data[target_column].values
         X = data[self.preprocessor.feature_columns].copy()
         
-        # Apply PCA if requested
         if use_pca:
-            X_processed, explained_var = self.preprocessor.apply_pca(X, fit=True)
-            logger.info(f"PCA explained variance: {explained_var:.4f}")
+            print("Applying PCA transformation...")
+            X_processed, explained_var, feature_names = self.preprocessor.apply_pca(X, fit=True)
+            print(f"Using {len(feature_names)} principal components")
+            
+            # Visualize PCA analysis
+            if GENERATE_PLOTS["pca_components"]:
+                self.preprocessor.visualize_pca_components(data, y)
+                
         else:
+            print("Using original features (no PCA)")
             X_processed = self.preprocessor.scaler.fit_transform(X)
+            feature_names = self.preprocessor.feature_columns
         
-        logger.info(f"Data shape after preprocessing: {X_processed.shape}")
-        logger.info(f"Class distribution: {np.bincount(y)}")
+        print(f"Final data shape: {X_processed.shape}")
+        print(f"Class distribution: {np.bincount(y)}")
         
-        return X_processed, y
+        return X_processed, y, feature_names
     
+    def get_feature_analysis(self) -> Dict[str, Any]:
+        """
+        Get analysis of features/components used in the model
+        """
+        analysis = {
+            "using_pca": self.preprocessor.pca is not None,
+            "n_features": len(self.preprocessor.feature_columns)
+        }
+        
+        if self.preprocessor.pca is not None:
+            analysis.update({
+                "n_components": len(self.preprocessor.component_names),
+                "explained_variance": sum(self.preprocessor.pca.explained_variance_ratio_),
+                "component_names": self.preprocessor.component_names,
+                "component_explanations": self.preprocessor.explain_components()
+            })
+        else:
+            analysis.update({
+                "feature_names": self.preprocessor.feature_columns
+            })
+        
+        return analysis
+
     def prepare_training_data(self, X: np.ndarray, y: np.ndarray, 
-                             test_size: float = 0.2, apply_sampling: bool = True) -> Dict[str, torch.Tensor]:
+                             test_size: float = TEST_SIZE, apply_sampling: bool = APPLY_SAMPLING) -> Dict[str, torch.Tensor]:
         """Prepare training and testing data with optional sampling"""
         # Train-test split
         X_train, X_test, y_train, y_test = train_test_split(
@@ -261,24 +187,29 @@ class FraudDetectionSystem:
             'X_test': torch.tensor(X_test, dtype=torch.float32),
             'y_train': torch.tensor(y_train, dtype=torch.long),
             'y_test': torch.tensor(y_test, dtype=torch.long)
-        }
+        }        
     
-    def initialize_model(self, input_size: int,  lr: float = 0.001):
+    def initialize_model(self, input_size: int, lr: float = 0.001, output_size: int = OUTPUT_SIZE):
         """Initialize the MLP model"""
-        self.input_size = input_size  # Store for later use
-        self.model = MLPFraudDetector(
-            input_size=input_size,
-            hidden_size=self.model_params['hidden_size'],
-            dropout_rate=self.model_params['dropout_rate'],
-        )
-        self.optimizer = optim.Adam(self.model.parameters(), lr=lr)
-        logger.info(f"Model initialized with input size: {input_size}")
-    
-    def train(self, data_tensors: Dict[str, torch.Tensor], num_epochs: int = 2000, timer : int = 1000) -> Dict[str, List[float]]:
-        """Train the fraud detection model"""
         if self.model is None:
-            self.initialize_model(data_tensors['X_train'].shape[1])
-        
+            self.input_size = input_size  # Store the integer, not the shape
+            self.model = MLPFraudDetector(
+                input_size=input_size,  # Pass the integer directly
+                hidden_size=self.model_params.get('hidden_size', 64),
+                output_size=output_size,  # Should be 2 for binary classification
+                dropout_rate=self.model_params.get('dropout_rate', 0.2),
+            )
+            self.optimizer = optim.Adam(self.model.parameters(), lr=lr)
+            logger.info(f"Model initialized with input size: {input_size}")
+    
+    def train(self, data_tensors: Dict[str, torch.Tensor], num_epochs: int = NUM_EPOCHS, 
+              lr: float = LEARNING_RATE, output_size: int = OUTPUT_SIZE,
+              timer : int = PRINT_FREQUENCY) -> Dict[str, List[float]]:
+
+        if self.model is None:
+            input_size = data_tensors['X_train'].shape[1] 
+            self.initialize_model(input_size, output_size=output_size, lr=lr)
+            
         X_train, y_train = data_tensors['X_train'], data_tensors['y_train']
         X_test, y_test = data_tensors['X_test'], data_tensors['y_test']
         
@@ -338,7 +269,7 @@ class FraudDetectionSystem:
         
         return results
     
-    def test_robustness(self, X: np.ndarray, y: np.ndarray, noise_levels: List[float] = [0.1, 0.2, 0.5]) -> Dict[float, float]:
+    def test_robustness(self, X: np.ndarray, y: np.ndarray, noise_levels : List = NOISE_LEVELS) -> Dict[float, float]:
         """Test model robustness with different noise levels"""
         if self.model is None:
             raise ValueError("Model not trained. Call train() first.")
@@ -450,7 +381,8 @@ class FraudDetectionSystem:
         
         logger.info(f"Model loaded successfully")
         
-    def predict_new_data(self, file_path: str, use_same_preprocessing: bool = True, sample_epoch : int = 100) -> Dict[str, Any]:
+    def predict_new_data(self, file_path: str, use_same_preprocessing: bool = True, 
+                         sample_epoch : int = NUM_EPOCHS, target_column: str = TARGET_COLUMN) -> Dict[str, Any]:
         """Predict on new unseen data using the trained model"""
         if self.model is None:
             raise ValueError("Model not trained. Call train() or load_model() first.")
@@ -463,9 +395,9 @@ class FraudDetectionSystem:
             data = self.preprocessor.discretize_categorical_features(data)
             
             # Check if target column exists (for evaluation)
-            has_target = 'fraudulent_user' in data.columns
+            has_target = target_column in data.columns
             if has_target:
-                y_true = data['fraudulent_user'].values
+                y_true = data[target_column].values
                 X = data[self.preprocessor.feature_columns].copy()
             else:
                 y_true = None
@@ -473,7 +405,8 @@ class FraudDetectionSystem:
             
             # Apply same scaling (but not fit)
             if self.preprocessor.pca is not None:
-                X_processed, _ = self.preprocessor.apply_pca(X, fit=False)
+                X_processed, _, names = self.preprocessor.apply_pca(X, fit=False)
+                print(names)
             else:
                 X_processed = self.preprocessor.scaler.transform(X)
         else:
@@ -514,8 +447,8 @@ class FraudDetectionSystem:
         plt.show()
 
     def visualize_data(self, data: pd.DataFrame = None, file_path: str = None, 
-                    target_column: str = 'fraudulent_user', 
-                    show_distributions: bool = True,
+                    target_column: str = TARGET_COLUMN, 
+                    show_distributions: bool = True, 
                     show_correlations: bool = True,
                     show_class_balance: bool = True,
                     show_pca_analysis: bool = True,
@@ -760,9 +693,7 @@ class FraudDetectionSystem:
         if self.model is None:
             logger.warning("No trained model available")
             return
-        
-        from sklearn.metrics import confusion_matrix, roc_curve, auc
-        
+                
         # Get predictions
         results = self.evaluate(X_test, y_test)
         y_pred = results['predictions']
