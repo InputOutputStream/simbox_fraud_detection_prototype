@@ -338,7 +338,7 @@ class FraudDetectionSystem:
         """Load a trained model and preprocessor"""
         
         if load_separate:
-            # Modern approach: load from separate files
+            # Load from separate files
             model_path = filepath.replace('.pth', '_weights.pth')
             preprocessor_path = filepath.replace('.pth', '_preprocessor.pkl')
             
@@ -380,9 +380,10 @@ class FraudDetectionSystem:
         self.optimizer = optim.Adam(self.model.parameters(), lr=0.001)
         
         logger.info(f"Model loaded successfully")
-        
+
     def predict_new_data(self, file_path: str, use_same_preprocessing: bool = True, 
-                         sample_epoch : int = NUM_EPOCHS, target_column: str = TARGET_COLUMN) -> Dict[str, Any]:
+                        sample_epoch : int = NUM_EPOCHS, target_column: str = TARGET_COLUMN,
+                        save_plots: bool = True, plot_dir: str = "plots") -> Dict[str, Any]:
         """Predict on new unseen data using the trained model"""
         if self.model is None:
             raise ValueError("Model not trained. Call train() or load_model() first.")
@@ -419,33 +420,40 @@ class FraudDetectionSystem:
             y_tensor = torch.tensor(y_true, dtype=torch.long)
             results = self.evaluate(X_tensor, y_tensor)
         else:
-            results = self.evaluate(X_tensor)    
+            results = self.evaluate(X_tensor)
             return results
         
-        """Visualize training results and feature distributions"""
-        if not self.training_history:
-            logger.warning("No training history available")
-            return
+        # Visualize and save training results
+        if save_plots and self.training_history:
+            # Create plots directory if it doesn't exist
+            Path(plot_dir).mkdir(parents=True, exist_ok=True)
+            
+            # Generate plot filename from file_path
+            base_name = Path(file_path).stem
+            plot_path = Path(plot_dir) / f"{base_name}_training_history.png"
+            
+            plt.figure(figsize=(12, 4))
+            
+            plt.subplot(1, 2, 1)
+            plt.plot(self.training_history['train_loss'][::sample_epoch])
+            plt.title('Training Loss')
+            plt.xlabel(f'Epoch (x{sample_epoch})')
+            plt.ylabel('Loss')
+            
+            plt.subplot(1, 2, 2)
+            if self.training_history['test_accuracy']:
+                plt.plot(self.training_history['test_accuracy'])
+                plt.title('Test Accuracy')
+                plt.xlabel('Validation Step')
+                plt.ylabel('Accuracy')
+            
+            plt.tight_layout()
+            plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+            plt.close()
+            logger.info(f"Training history plot saved to {plot_path}")
         
-        # Plot training loss
-        plt.figure(figsize=(12, 4))
+        return results
         
-        plt.subplot(1, 2, 1)
-        plt.plot(self.training_history['train_loss'][::sample_epoch])  # Sample every 100 epochs
-        plt.title('Training Loss')
-        plt.xlabel(f'Epoch (x{sample_epoch})')
-        plt.ylabel('Loss')
-        
-        plt.subplot(1, 2, 2)
-        if self.training_history['test_accuracy']:
-            plt.plot(self.training_history['test_accuracy'])
-            plt.title('Test Accuracy')
-            plt.xlabel('Validation Step')
-            plt.ylabel('Accuracy')
-        
-        plt.tight_layout()
-        plt.show()
-
     def visualize_data(self, data: pd.DataFrame = None, file_path: str = None, 
                     target_column: str = TARGET_COLUMN, 
                     show_distributions: bool = True, 
