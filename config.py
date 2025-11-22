@@ -16,6 +16,24 @@ LOG_LEVEL: str = "INFO"
 # =============================================================================
 
 # File paths
+
+"""
+for example, 
+train_data_paths = {
+    "traffic": "TestCDR/advanced_traffic/traffic_12%_50sims/Op_1_CDRTrace_flagged.csv",
+    "mobility": "TestCDR/advanced_mobility/mobility_12%_50sims/Op_1_CDRTrace_flagged.csv",
+    "social": "TestCDR/advanced_social/social_12%_50sims/Op_1_CDRTrace_flagged.csv",
+    "all_naive": "TestCDR/all_naive/all_naive_12%_50sims/Op_1_CDRTrace_flagged.csv"
+}
+"""
+
+TRAIN_DATA_PATHS = {
+    "traffic": "TestCDR/advanced_traffic/",
+    "mobility": "TestCDR/advanced_mobility/",
+    "social": "TestCDR/advanced_social/",
+    "all_naive": "TestCDR/all_naive/"
+}
+
 TRAIN_DATA_PATH: str = "TestCDR/"
 TEST_DATA_PATH: str = "TestCDR/"
 VALIDATION_DATA_PATH: str = "TestCDR/"
@@ -270,8 +288,8 @@ class QuickConfig:
     def quick_test():
         """Fast configuration for testing"""
         global NUM_EPOCHS, PRINT_FREQUENCY, ROBUSTNESS_TEST
-        NUM_EPOCHS = 100
-        PRINT_FREQUENCY = 20
+        NUM_EPOCHS = 20
+        PRINT_FREQUENCY = 10
         ROBUSTNESS_TEST = False
         GENERATE_PLOTS["training_history"] = True
         # Turn off other plots for speed

@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -186,6 +187,28 @@ class EnsembleSystem:
         
         logger.info("All base models trained/loaded successfully")
     
+    def load_and_preprocess_data(self, data_path: str):
+        self.base_models_val_data = {}
+        if type(data_path) is dict:
+            for b in self.base_model_names:
+                X_val, y_val, _ = self.base_models[b].load_and_preprocess_data(data_path[b])
+                self.base_models_val_data[b] = (X_val, y_val)
+            logger.info(f"✓ Loaded validation data from {data_path[b]}")
+        else:
+            for b in self.base_model_names:
+                if b in data_path:
+                    X_val, y_val, _ = self.base_models[b].load_and_preprocess_data(data_path)
+                    logger.info(f"✓ Loaded validation data from {data_path}")
+                    self.base_models_val_data[b] = (X_val, y_val)
+                    return X_val, y_val
+    
+    def load_validation_data(self, val_path):
+        return self.load_and_preprocess_data(val_path)
+
+    def load_test_data(self, test_path):
+        return self.load_and_preprocess_data(test_path)
+    
+
     def load_base_models(self, model_dir: str = MODEL_DIR):
         """Load all base models from saved files"""
         logger.info(f"Loading base models from {model_dir}...")

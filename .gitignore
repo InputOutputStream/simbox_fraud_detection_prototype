@@ -4,9 +4,9 @@ __pycache__/
 *$py.class
 
 
+models/
 data_original/
 TestCDR/
-models/
 
 # C extensions
 *.so
@@ -59,6 +59,7 @@ cover/
 # Translations
 *.mo
 *.pot
+*.pth
 
 # Django stuff:
 *.log

@@ -83,7 +83,6 @@ class ImbalancedDataHandler:
             X_resampled, y_resampled = self.smote.fit_resample(X_resampled, y_resampled)
             # Apply Random Under Sampling
             X_resampled, y_resampled = self.undersampler.fit_resample(X_resampled, y_resampled)
-            
             logger.info(f"After iteration {i+1}: {len(X_resampled)} samples")
         
         return X_resampled, y_resampled
