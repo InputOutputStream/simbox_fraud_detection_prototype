@@ -1,11 +1,3 @@
-"""
-Research-Focused Configuration for Fraud Detection System
-========================================================
-
-Streamlined configuration for academic research and experimentation.
-Focuses on essential parameters without enterprise overhead.
-"""
-
 from typing import List, Dict, Any, Optional
 import os
 
@@ -24,8 +16,9 @@ LOG_LEVEL: str = "INFO"
 # =============================================================================
 
 # File paths
-TRAIN_DATA_PATH: str = "data/fraud_data.csv"
-TEST_DATA_PATH: str = "data/test_data.csv"
+TRAIN_DATA_PATH: str = "TestCDR/"
+TEST_DATA_PATH: str = "TestCDR/"
+VALIDATION_DATA_PATH: str = "TestCDR/"
 
 # Column definitions
 TARGET_COLUMN: str = 'fraudulent_user'
@@ -76,7 +69,7 @@ ARCHITECTURES: Dict[str, Dict[str, Any]] = {
 # =============================================================================
 
 # Training settings
-NUM_EPOCHS: int = 2000
+NUM_EPOCHS: int = 20
 LEARNING_RATE: float = 0.001
 BATCH_SIZE: int = 32  # For future batch implementation
 
@@ -85,12 +78,12 @@ OPTIMIZER: str = "Adam"
 WEIGHT_DECAY: float = 1e-5
 
 # Monitoring
-PRINT_FREQUENCY: int = 100
-VALIDATION_FREQUENCY: int = 100
+PRINT_FREQUENCY: int = 10
+VALIDATION_FREQUENCY: int = 10
 
 # Early stopping (optional)
 USE_EARLY_STOPPING: bool = False
-EARLY_STOPPING_PATIENCE: int = 200
+EARLY_STOPPING_PATIENCE: int = 20
 
 # =============================================================================
 # DATA PREPROCESSING
@@ -176,6 +169,7 @@ PLOT_FORMAT: str = "png"
 MODEL_DIR: str = "models"
 RESULTS_DIR: str = "results"
 PLOTS_DIR: str = "plots"
+DATA_DIR: str = "TestCDR"
 
 # Model naming
 MODEL_NAME: str = "fraud_detector"

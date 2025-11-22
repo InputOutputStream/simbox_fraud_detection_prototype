@@ -24,8 +24,6 @@ from preprocessor import DataPreprocessor
 
 from config import *
 QuickConfig.quick_test()
-print(get_config_summary())
-
 
 """
 1. Data Processing Flow ✅
@@ -38,7 +36,6 @@ Data Loading → Preprocessing → Train/Test Split → Sampling → Model Train
 Training → Save (Model + Preprocessor State) → Load → Predict on New Data
 
 """
-
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

@@ -10,7 +10,7 @@ def test_complete_pipeline(train_data, x, num_epochs=NUM_EPOCHS, timer=PRINT_FRE
     """Test complet du pipeline avec visualisations sauvegardées"""
     
     # 1. Configuration
-    model_name_pth = f"{model_name}.pth"
+    model_name_pth = f"models/{model_name}.pth"
     plot_dir = Path("plots") / model_name
     plot_dir.mkdir(parents=True, exist_ok=True)
     
@@ -181,7 +181,7 @@ results["mobility"] = test_complete_pipeline(
 )
 
 
-# Test 2: traffic_12%
+# Test 3: traffic_12%
 print("\n" + "="*80)
 print("TEST 2: Advanced Traffic 12%")
 print("="*80)
@@ -193,7 +193,7 @@ results["traffic"] = test_complete_pipeline(
     "traffic_12%"
 )
 
-# Test 2: social_12%
+# Test 4: social_12%
 print("\n" + "="*80)
 print("TEST 2: Advanced social 12%")
 print("="*80)
