@@ -4,7 +4,6 @@ __pycache__/
 *$py.class
 
 
-models/
 data_original/
 TestCDR/
 
@@ -59,7 +58,6 @@ cover/
 # Translations
 *.mo
 *.pot
-*.pth
 
 # Django stuff:
 *.log

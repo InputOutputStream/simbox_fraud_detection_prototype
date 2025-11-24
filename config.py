@@ -87,7 +87,7 @@ ARCHITECTURES: Dict[str, Dict[str, Any]] = {
 # =============================================================================
 
 # Training settings
-NUM_EPOCHS: int = 20
+NUM_EPOCHS: int = 2000
 LEARNING_RATE: float = 0.001
 BATCH_SIZE: int = 32  # For future batch implementation
 
@@ -96,8 +96,8 @@ OPTIMIZER: str = "Adam"
 WEIGHT_DECAY: float = 1e-5
 
 # Monitoring
-PRINT_FREQUENCY: int = 10
-VALIDATION_FREQUENCY: int = 10
+PRINT_FREQUENCY: int = 1000
+VALIDATION_FREQUENCY: int = 100
 
 # Early stopping (optional)
 USE_EARLY_STOPPING: bool = False
@@ -288,8 +288,6 @@ class QuickConfig:
     def quick_test():
         """Fast configuration for testing"""
         global NUM_EPOCHS, PRINT_FREQUENCY, ROBUSTNESS_TEST
-        NUM_EPOCHS = 20
-        PRINT_FREQUENCY = 10
         ROBUSTNESS_TEST = False
         GENERATE_PLOTS["training_history"] = True
         # Turn off other plots for speed

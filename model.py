@@ -135,7 +135,8 @@ class FraudDetectionSystem:
         else:
             print("Using original features (no PCA)")
             X_processed = self.preprocessor.scaler.fit_transform(X)
-            feature_names = self.preprocessor.feature_columns
+            if feature_names is None:
+                feature_names = self.preprocessor.feature_columns
         
         print(f"Final data shape: {X_processed.shape}")
         print(f"Class distribution: {np.bincount(y)}")
@@ -264,7 +265,15 @@ class FraudDetectionSystem:
             logger.info(f'\n{report}')
         
         return results
-    
+
+    def add_gaussian_noise(self, X: np.ndarray, feature_columns, std_dev: float = 0.1) -> np.ndarray:
+        """Add Gaussian noise to the features"""
+        x_noisy = self.preprocessor.add_gaussian_noise(
+            pd.DataFrame(X, columns=feature_columns),
+            feature_columns=feature_columns,
+            std_dev=std_dev)
+        return np.array(x_noisy)
+        
     def test_robustness(self, X: np.ndarray, y: np.ndarray, noise_levels : List = NOISE_LEVELS) -> Dict[float, float]:
         """Test model robustness with different noise levels"""
         if self.model is None:

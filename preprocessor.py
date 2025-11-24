@@ -89,6 +89,15 @@ class DataPreprocessor:
             explained_variance = sum(self.pca.explained_variance_ratio_)
         
         return principal_components, explained_variance, self.component_names
+
+    def add_gaussian_noise(self, data: pd.DataFrame, feature_columns: List[str], std_dev: float = 0.1) -> pd.DataFrame:
+        """Add Gaussian noise to specified feature columns"""
+        data_noisy = data.copy()
+        for column in feature_columns:
+            if column in data_noisy.columns:
+                noise = np.random.normal(0, std_dev, size=data_noisy.shape[0])
+                data_noisy[column] += noise
+        return data_noisy
     
     def get_pca_loadings(self) -> pd.DataFrame:
         """

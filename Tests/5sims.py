@@ -25,14 +25,17 @@ def test_complete_pipeline(train_data, x, num_epochs=NUM_EPOCHS, timer=PRINT_FRE
         print("→ Training new model...")
         
         # Charger et prétraiter les données
-        X, y, _ = fraud_detector.load_and_preprocess_data(train_data)
+        X, y, names = fraud_detector.load_and_preprocess_data(train_data, use_pca=True)
         
+
+        X = fraud_detector.add_gaussian_noise(X, feature_columns=names)
+
         # Préparer les données d'entraînement
         data_tensors = fraud_detector.prepare_training_data(X, y)
         print(f"Training data shape: {data_tensors['X_train'].shape}")
         
         # Entraîner le modèle
-        fraud_detector.train(data_tensors, num_epochs, timer=timer)
+        fraud_detector.train(data_tensors, num_epochs=num_epochs, timer=timer)
         
         # Sauvegarder le modèle
         fraud_detector.save_model(model_name_pth)
@@ -161,10 +164,8 @@ print("\n" + "="*80)
 print("TEST 1: All Naive 12%")
 print("="*80)
 results["all_naive"] = test_complete_pipeline(
-    'TestCDR/all_naive/all_naive_12%_5sims/Op_1_CDRTrace_flagged.csv', 
-    'TestCDR/all_naive/all_naive_12%_5sims/Op_1_CDRTrace_test_split.csv',
-    NUM_EPOCHS, 
-    PRINT_FREQUENCY, 
+    train_data='TestCDR/all_naive/all_naive_12%_5sims/Op_1_CDRTrace_flagged.csv', 
+    x='TestCDR/all_naive/all_naive_12%_5sims/Op_1_CDRTrace_test_split.csv',
     model_name="all_naive_12%"
 )
 
@@ -173,11 +174,9 @@ print("\n" + "="*80)
 print("TEST 2: Advanced Mobility 12%")
 print("="*80)
 results["mobility"] = test_complete_pipeline(
-    'TestCDR/advanced_mobility/mobility_12%_5sims/Op_1_CDRTrace_flagged.csv', 
-    'TestCDR/advanced_mobility/mobility_12%_5sims/Op_1_CDRTrace_test_split.csv', 
-    NUM_EPOCHS, 
-    PRINT_FREQUENCY, 
-    "mobility_12%"
+    train_data='TestCDR/advanced_mobility/mobility_12%_5sims/Op_1_CDRTrace_flagged.csv', 
+    x='TestCDR/advanced_mobility/mobility_12%_5sims/Op_1_CDRTrace_test_split.csv', 
+    model_name="mobility_12%"
 )
 
 
@@ -186,11 +185,9 @@ print("\n" + "="*80)
 print("TEST 2: Advanced Traffic 12%")
 print("="*80)
 results["traffic"] = test_complete_pipeline(
-    'TestCDR/advanced_traffic/traffic_12%_5sims/Op_1_CDRTrace_flagged.csv', 
-    'TestCDR/advanced_traffic/traffic_12%_5sims/Op_1_CDRTrace_test_split.csv', 
-    NUM_EPOCHS, 
-    PRINT_FREQUENCY, 
-    "traffic_12%"
+    train_data='TestCDR/advanced_traffic/traffic_12%_5sims/Op_1_CDRTrace_flagged.csv', 
+    x='TestCDR/advanced_traffic/traffic_12%_5sims/Op_1_CDRTrace_test_split.csv', 
+    model_name="traffic_12%"
 )
 
 # Test 4: social_12%
@@ -198,11 +195,9 @@ print("\n" + "="*80)
 print("TEST 2: Advanced social 12%")
 print("="*80)
 results["social"] = test_complete_pipeline(
-    'TestCDR/advanced_social/social_12%_5sims/Op_1_CDRTrace_flagged.csv', 
-    'TestCDR/advanced_social/social_12%_5sims/Op_1_CDRTrace_test_split.csv', 
-    NUM_EPOCHS, 
-    PRINT_FREQUENCY, 
-    "social_12%"
+    train_data='TestCDR/advanced_social/social_12%_5sims/Op_1_CDRTrace_flagged.csv', 
+    x='TestCDR/advanced_social/social_12%_5sims/Op_1_CDRTrace_test_split.csv', 
+    model_name="social_12%"
 )
 
 # Résumé final
